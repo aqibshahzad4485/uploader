@@ -260,7 +260,7 @@ Open **http://localhost:3000** and log in with:
 
 ## 🚢 Deploying to a New Server
 
-When cloning onto a **new machine** (e.g. a Jellyfin server, VPS, or NAS), always run this full sequence:
+When cloning onto a **new machine** (e.g. a Jellyfin server, VPS, or NAS), this is the complete sequence that works:
 
 ```bash
 git clone https://github.com/aqibshahzad4485/uploader.git
@@ -269,39 +269,40 @@ cd uploader
 # 1. Install dependencies (node_modules are NOT in git)
 npm install
 
-# 2. Create your environment file  ← REQUIRED, not in git
+# 2. Initialize database + create root user  ← works without .env
+npm run setup
+
+# 3. Create your environment file  ← required for JWT auth to work
 cp .env.example .env
-# Then edit it — at minimum set these two values:
+nano .env
+# Set at minimum:
 #   JWT_SECRET=<run: openssl rand -hex 32>
 #   DATABASE_URL=file:./dev.db
-nano .env
 
-# 3. Create your folder config  ← REQUIRED, not in git
+# 4. Create your folder config
 cp uploader.json.example uploader.json
 nano uploader.json   # set your upload destination paths
 
-# 4. Initialize database + create root user  ← run ONCE on first deploy
-npm run setup
-
-# 5. Build the app  ← run after every git pull
+# 5. Build and start
 npm run build
-
-# 6. Start
 npm start
 ```
+
+> 💡 **`npm run setup` works without `.env`** — it falls back to `file:./dev.db` automatically. If the database already has users, setup skips seeding (`✓ Database already has users. Skipping seed.`).
 
 ### Common Errors on Fresh Deploy
 
 | Error | Cause | Fix |
 |---|---|---|
-| `sh: next: not found` | `node_modules` missing or no build | Run `npm install && npm run build` |
-| `Module '@prisma/client' has no exported member 'PrismaClient'` | Prisma client not generated | Run `npm run build` (now auto-generates) or `npx prisma generate` |
-| `datasource.url property is required` | `.env` file missing | `cp .env.example .env` then set `DATABASE_URL=file:./dev.db` |
-| `Cannot find module '.prisma/client'` | Prisma not generated | Run `npm run build` or `npx prisma generate` |
-| `Error: Cannot find module` | `node_modules` missing | Run `npm install` |
-| `ENOENT: .env` | Missing env file | `cp .env.example .env` and edit it |
-| `ENOENT: uploader.json` | Missing folder config | `cp uploader.json.example uploader.json` and edit it |
-| `Prisma: Table does not exist` | DB not initialized | Run `npx prisma db push` |
+| `sh: next: not found` | No build yet | Run `npm run build` |
+| `Module '@prisma/client' has no exported member` | Prisma not generated | Run `npm run build` — it auto-generates now |
+| `datasource.url property is required` | Old version of `prisma.config.ts` | Run `git pull` to get latest |
+| `Cannot find module '/scripts/seed.ts'` | Old version had scripts gitignored | Run `git pull` to get latest |
+| `Cannot find module '.prisma/client'` | Prisma not generated | Run `npm run build` |
+| `node_modules` errors | Dependencies not installed | Run `npm install` |
+| `ENOENT: uploader.json` | Missing folder config | `cp uploader.json.example uploader.json` then edit it |
+| Login fails / JWT errors | `JWT_SECRET` not set in `.env` | Add `JWT_SECRET=...` to your `.env` file |
+| `Prisma: Table does not exist` | DB not initialized | Run `npm run setup` |
 
 ### Updating an Existing Deploy
 
