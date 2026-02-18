@@ -6,16 +6,6 @@ import fs from "fs";
 import path from "path";
 import checkDiskSpace from 'check-disk-space';
 
-// ── Increase body size limit for this route (chunks up to 10 MB) ─────────────
-export const config = {
-    api: {
-        bodyParser: {
-            sizeLimit: "10mb",
-        },
-        responseLimit: false,
-    },
-};
-
 // ── Config reader ─────────────────────────────────────────────────────────────
 function getUploadConfig() {
     try {

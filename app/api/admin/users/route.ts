@@ -16,7 +16,7 @@ async function getMonthlyUsage(userId: number) {
         select: { size: true }
     });
 
-    return uploads.reduce((acc, curr) => acc + curr.size, BigInt(0));
+    return uploads.reduce((acc: bigint, curr: { size: bigint }) => acc + curr.size, BigInt(0));
 }
 
 export async function GET(req: Request) {
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     });
 
     // Calculate usage for each user
-    const formattedUsers = await Promise.all(users.map(async (u) => {
+    const formattedUsers = await Promise.all(users.map(async (u: typeof users[number]) => {
         const usage = await getMonthlyUsage(u.id);
         return {
             ...u,
