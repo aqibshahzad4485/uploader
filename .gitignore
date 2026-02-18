@@ -60,5 +60,5 @@ uploader.json
 # temp chunk upload directory
 /.tmp_uploads
 
-# temp scripts
-/scripts
+# logs directory (app writes here as fallback)
+/logs
