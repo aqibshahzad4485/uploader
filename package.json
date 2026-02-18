@@ -6,13 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "npx tsx scripts/seed.ts",
+    "setup": "npx prisma generate && npx prisma db push && npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.4.0",
     "@prisma/client": "^7.4.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
+    "check-disk-space": "^3.4.0",
     "clsx": "^2.1.1",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.574.0",
@@ -33,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

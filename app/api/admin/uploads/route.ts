@@ -8,10 +8,14 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const limit = searchParams.get('limit');
+
+    // take undefined = all records
     const uploads = await prisma.upload.findMany({
         orderBy: { createdAt: 'desc' },
-        take: 50,
-        include: { user: { select: { username: true } } }
+        take: limit ? parseInt(limit) : undefined,
+        include: { user: { select: { username: true, role: true } } }
     });
 
     return NextResponse.json(uploads.map(u => ({

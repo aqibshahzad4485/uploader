@@ -1,0 +1,13 @@
+{
+  "uploadPaths": [
+    {
+      "name": "Movies",
+      "path": "/mnt/media/movies"
+    },
+    {
+      "name": "Documents",
+      "path": "/home/user/documents"
+    }
+  ],
+  "defaultQuota": "10GB"
+}

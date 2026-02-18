@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
+import checkDiskSpace from 'check-disk-space';
 
 // Function to read config
 function getUploadConfig() {
@@ -20,10 +21,14 @@ function getUploadConfig() {
 }
 
 export async function POST(req: Request) {
-    const user = await getCurrentUser();
-    if (!user) {
+    const sessionUser = await getCurrentUser();
+    if (!sessionUser) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    let ip = (req.headers.get("x-forwarded-for") ?? "127.0.0.1").split(",")[0].trim();
+    if (ip.startsWith("::ffff:")) ip = ip.substring(7);
+    const userAgent = req.headers.get("user-agent") ?? "Unknown";
 
     try {
         const formData = await req.formData();
@@ -41,7 +46,36 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Invalid folder" }, { status: 400 });
         }
 
-        // Resolve path. Ensure it's absolute or relative to CWD.
+        // Check permissions and quota for non-admin users
+        const user = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+        if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+        if (user.role !== 'admin') {
+            // Check folder permission
+            const allowed = JSON.parse(user.allowedFolders || "[]");
+            if (!allowed.includes(folderName)) {
+                return NextResponse.json({ error: "Access denied to this folder" }, { status: 403 });
+            }
+
+            // Check monthly quota
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const usageResult = await prisma.upload.aggregate({
+                _sum: { size: true },
+                where: { userId: user.id, createdAt: { gte: startOfMonth } }
+            });
+
+            const currentUsage = usageResult._sum.size || BigInt(0);
+            const newSize = BigInt(file.size);
+
+            if (currentUsage + newSize > user.quota) {
+                return NextResponse.json({
+                    error: `Quota exceeded. Used: ${(Number(currentUsage) / 1024 / 1024).toFixed(2)}MB / ${(Number(user.quota) / 1024 / 1024).toFixed(2)}MB`
+                }, { status: 403 });
+            }
+        }
+
+        // Resolve path
         let uploadDir = targetFolder.path;
         if (!path.isAbsolute(uploadDir)) {
             uploadDir = path.join(process.cwd(), uploadDir);
@@ -50,6 +84,19 @@ export async function POST(req: Request) {
         // Ensure directory exists
         if (!fs.existsSync(uploadDir)) {
             await fs.promises.mkdir(uploadDir, { recursive: true });
+        }
+
+        // Check Host Storage
+        try {
+            const diskSpace = await checkDiskSpace(uploadDir);
+            const used = diskSpace.size - diskSpace.free;
+            const usagePercent = (used / diskSpace.size) * 100;
+
+            if (usagePercent > 80) {
+                return NextResponse.json({ error: "Cannot upload: Host storage full (>80% usage)." }, { status: 507 });
+            }
+        } catch (err) {
+            console.error("Disk check skipped:", err);
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
@@ -63,9 +110,11 @@ export async function POST(req: Request) {
             data: {
                 filename: file.name,
                 path: filePath,
-                size: BigInt(file.size), // Prisma handles BigInt with the adapter?
+                size: BigInt(file.size),
                 status: "completed",
-                userId: user.id
+                userId: user.id,
+                ip,
+                userAgent
             }
         });
 

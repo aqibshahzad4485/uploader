@@ -30,8 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — copy .env.example to .env and fill in values
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -40,4 +42,20 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma generated client
 /app/generated/prisma
+
+# database — never commit the live database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# user configuration — copy uploader.json.example to uploader.json
+uploader.json
+
+# uploads directory
+/uploads
+
+# temp scripts
+/scripts

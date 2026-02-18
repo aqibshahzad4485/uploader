@@ -13,6 +13,7 @@ model User {
   password  String
   role      String   @default("user") // "admin" or "user"
   quota     BigInt   @default(10737418240) // 10GB in bytes
+  allowedFolders String @default("[]") // JSON string of allowed folder names
   createdAt DateTime @default(now())
   uploads   Upload[]
 }
@@ -26,4 +27,22 @@ model Upload {
   createdAt DateTime @default(now())
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
+  ip        String?
+  userAgent String?
+  location  String?
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  username  String
+  success   Boolean
+  ip        String
+  userAgent String
+  location  String?
+  createdAt DateTime @default(now())
+}
+
+model SystemConfig {
+  key   String @id
+  value String
 }

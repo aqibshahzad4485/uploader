@@ -24,5 +24,15 @@ export async function GET(req: Request) {
     }
 
     const config = getUploadConfig();
+
+    if (user.role !== 'admin') {
+        try {
+            const allowed = JSON.parse(user.allowedFolders || "[]");
+            config.uploadPaths = config.uploadPaths.filter((p: any) => allowed.includes(p.name));
+        } catch (e) {
+            config.uploadPaths = [];
+        }
+    }
+
     return NextResponse.json(config);
 }

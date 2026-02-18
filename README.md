@@ -1,36 +1,239 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Secure File Uploader
 
-## Getting Started
+A robust, secure, and self-hosted web application for managing file uploads with role-based access control, strict quota management, and comprehensive auditing. Built with **Next.js**, **Prisma**, and **SQLite**.
 
-First, run the development server:
+---
+
+## 🚀 Features
+
+- **Role-Based Access Control (RBAC)**
+  - **Master (root)**: Full access to all folders, unlimited quota, user management, and system configuration. Cannot be deleted.
+  - **Admin**: Full access to all folders and unlimited quota. Can manage users and folders.
+  - **User**: Restricted to assigned folders with a monthly data quota.
+- **Folder Permissions**: Users can only upload to folders explicitly assigned by an Admin.
+- **Smart Quota System**: Monthly bandwidth quotas per user, enforced both client-side and server-side.
+- **Host Storage Guard**: Automatically blocks uploads if the server disk usage exceeds **80%**.
+- **Comprehensive Auditing**:
+  - **Upload History**: Tracks every upload — user, file size, destination, IP address, and browser/device.
+  - **Login Logs**: Records all login attempts (success/failure) with IP and User Agent.
+  - **Data Retention**: Configurable log retention period (default: 30 days). Old logs are auto-deleted.
+- **Security**:
+  - **Root User Protection**: The `root` user cannot be deleted. Its password can only be changed by itself.
+  - **JWT Authentication**: Stateless, secure sessions.
+  - **bcrypt Password Hashing**: Industry-standard password storage.
+
+---
+
+## 🛠️ Installation & Setup
+
+### Prerequisites
+
+- **Node.js** v18 or higher
+- **npm** (comes with Node.js)
+- A **Linux/Unix** server (also works on macOS/Windows)
+
+### 1. Clone the Repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd uploader
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure Environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Edit `.env` and set a strong `JWT_SECRET`:
 
-## Learn More
+```env
+JWT_SECRET="your-long-random-secret-here"
+DATABASE_URL="file:./dev.db"
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Configure Upload Folders
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cp uploader.json.example uploader.json
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Edit `uploader.json` to define your upload destinations:
 
-## Deploy on Vercel
+```json
+{
+  "uploadPaths": [
+    { "name": "Movies", "path": "/mnt/media/movies" },
+    { "name": "Documents", "path": "/home/user/docs" }
+  ]
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+> **Note**: The system user running the app must have **write permission** to these directories.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 4. Initialize Database & Seed Default User
+
+```bash
+npm run setup
+```
+
+This command will:
+1. Generate the Prisma client
+2. Create the SQLite database and all tables
+3. Create the default `root` user (if no users exist)
+
+### 5. Build & Start
+
+```bash
+npm run build
+npm start
+```
+
+The app will be available at `http://localhost:3000`.
+
+---
+
+## 🔑 Default Credentials
+
+| Field    | Value   |
+|----------|---------|
+| Username | `root`  |
+| Password | `admin` |
+
+> ⚠️ **Change the password immediately** after your first login via the Admin Panel!
+
+---
+
+## 👥 Roles & Access
+
+| Feature                   | User | Admin | Master (root) |
+|---------------------------|:----:|:-----:|:-------------:|
+| Upload files              | ✅   | ✅    | ✅            |
+| Access assigned folders   | ✅   | ✅    | ✅            |
+| Access all folders        | ❌   | ✅    | ✅            |
+| Monthly quota enforced    | ✅   | ❌    | ❌            |
+| Manage users              | ❌   | ✅    | ✅            |
+| Manage folders            | ❌   | ✅    | ✅            |
+| View upload history       | ❌   | ✅    | ✅            |
+| View login logs           | ❌   | ✅    | ✅            |
+| Configure data retention  | ❌   | ❌    | ✅            |
+| Delete root user          | ❌   | ❌    | ❌            |
+
+---
+
+## ⚙️ Admin Guide
+
+### Managing Users (`/admin`)
+
+1. **Create User**: Enter username, password, role, and monthly quota (in GB).
+2. **Allowed Folders**: Select which folders the user can upload to. Standard users see only their assigned folders.
+3. **Edit User**: Update password, quota, or folder permissions at any time.
+4. **Delete User**: Removes the user and their upload history records. Files on disk are **not** deleted.
+
+### Managing Folders (`/admin` → Folder Management)
+
+1. Add a **Name** (display label, e.g., `Movies`) and a **Path** (absolute server path, e.g., `/mnt/media/movies`).
+2. Click **Save Configuration** to persist changes.
+3. Ensure the server has write access to each path.
+
+### Monitoring
+
+- **Recent Uploads** (`/admin`): Last 10 uploads. Click **View Full History** for the complete sortable/filterable log at `/admin/history`.
+- **Recent Logins** (`/admin`): Last 10 login attempts. Click **View Full History** for the complete log at `/admin/logins`.
+
+### Data Retention (Master Only)
+
+In the **Data Retention** section at the bottom of the Admin Panel, set the number of days to keep logs. Logs older than this threshold are automatically deleted on each login event.
+
+---
+
+## 📤 How Uploads Work
+
+1. User selects a file and a destination folder.
+2. **Pre-upload checks** (client-side):
+   - A folder must be selected.
+   - File size must not exceed the user's remaining monthly quota.
+3. **Server-side checks** (on upload):
+   - User is authenticated.
+   - Folder is in the user's allowed list.
+   - Monthly quota is not exceeded.
+   - Host disk usage is below 80%.
+4. File is written to the configured server path.
+5. Upload is recorded in the database with metadata (user, size, path, IP, browser).
+
+---
+
+## 🔐 How Login Logging Works
+
+Every login attempt — whether successful or failed — is recorded with:
+- **Username** attempted
+- **Success/Failure** status
+- **IP Address** (IPv4 preferred; IPv6 fallback)
+- **User Agent** (browser/OS string)
+- **Timestamp**
+
+Logs are automatically cleaned up based on the configured retention period.
+
+---
+
+## 🐧 Running as a Linux Service (systemd)
+
+To keep the app running in the background:
+
+1. Create the service file:
+
+```bash
+sudo nano /etc/systemd/system/uploader.service
+```
+
+2. Paste the following (adjust `User` and `WorkingDirectory`):
+
+```ini
+[Unit]
+Description=Secure File Uploader
+After=network.target
+
+[Service]
+Type=simple
+User=your_linux_username
+WorkingDirectory=/path/to/uploader
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+3. Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable uploader
+sudo systemctl start uploader
+sudo systemctl status uploader
+```
+
+---
+
+## 🗄️ Backup
+
+The entire application state lives in one file: **`dev.db`**.
+
+Back it up regularly:
+
+```bash
+cp /path/to/uploader/dev.db /backups/uploader-$(date +%Y%m%d).db
+```
+
+---
+
+## 🔧 Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| "Host storage full" error | Free up disk space on the partition where upload folders reside |
+| Upload fails silently | Check that the app user has write permission to the target folder |
+| Can't log in | Run `npm run seed` to ensure the root user exists |
+| Database errors | Delete `dev.db` and run `npm run setup` to start fresh |

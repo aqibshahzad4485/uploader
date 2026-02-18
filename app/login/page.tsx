@@ -49,7 +49,7 @@ export default function LoginPage() {
                         Sign in to Uploader
                     </h2>
                     <p className="mt-2 text-sm text-gray-400">
-                        Access your secure cloud storage
+                        Upload to your secure cloud storage
                     </p>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleLogin}>
