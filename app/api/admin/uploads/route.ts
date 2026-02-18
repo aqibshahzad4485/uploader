@@ -18,7 +18,7 @@ export async function GET(req: Request) {
         include: { user: { select: { username: true, role: true } } }
     });
 
-    return NextResponse.json(uploads.map(u => ({
+    return NextResponse.json(uploads.map((u: typeof uploads[number]) => ({
         ...u,
         size: u.size.toString()
     })));

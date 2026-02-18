@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { signToken } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 const cleanOldLogs = async () => {
     try {
@@ -45,28 +46,17 @@ export async function POST(req: Request) {
         // Log failure
         if (!user || !(await bcrypt.compare(password, user.password))) {
             await prisma.loginLog.create({
-                data: {
-                    username: username || "Unknown",
-                    success: false,
-                    ip,
-                    userAgent
-                }
+                data: { username: username || "Unknown", success: false, ip, userAgent }
             });
-            return NextResponse.json(
-                { error: "Invalid credentials" },
-                { status: 401 }
-            );
+            logger.login(username || "Unknown", false, ip, userAgent);
+            return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
         }
 
         // Log success
         await prisma.loginLog.create({
-            data: {
-                username: user.username,
-                success: true,
-                ip,
-                userAgent
-            }
+            data: { username: user.username, success: true, ip, userAgent }
         });
+        logger.login(user.username, true, ip, userAgent);
 
         // Trigger cleanup (fire and forget)
         cleanOldLogs();

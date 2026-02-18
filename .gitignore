@@ -57,5 +57,8 @@ uploader.json
 # uploads directory
 /uploads
 
+# temp chunk upload directory
+/.tmp_uploads
+
 # temp scripts
 /scripts
