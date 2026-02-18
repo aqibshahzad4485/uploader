@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Folder, Save, Trash2, Plus, ArrowLeft, UploadCloud, Edit2, X, Check, Clock, Shield } from "lucide-react";
+import { Users, Folder, Save, Trash2, Plus, ArrowLeft, UploadCloud, Edit2, X, Check, Clock, Shield, Terminal } from "lucide-react";
 
 export default function AdminPage() {
     const [users, setUsers] = useState<any[]>([]);
@@ -232,9 +232,14 @@ export default function AdminPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-gray-800 pb-4">
                     <h1 className="text-2xl font-bold">Admin Panel</h1>
-                    <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-gray-400 hover:text-white">
-                        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => router.push("/admin/api")} className="flex items-center gap-2 text-gray-400 hover:text-blue-400 text-sm border border-gray-700 hover:border-blue-700 px-3 py-1.5 rounded transition-colors">
+                            <Terminal className="h-4 w-4" /> API Explorer
+                        </button>
+                        <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-gray-400 hover:text-white">
+                            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+                        </button>
+                    </div>
                 </div>
 
                 {status && <div className="p-3 bg-blue-900/20 text-blue-400 rounded border border-blue-900/50">{status}</div>}

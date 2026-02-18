@@ -237,3 +237,113 @@ cp /path/to/uploader/dev.db /backups/uploader-$(date +%Y%m%d).db
 | Upload fails silently | Check that the app user has write permission to the target folder |
 | Can't log in | Run `npm run seed` to ensure the root user exists |
 | Database errors | Delete `dev.db` and run `npm run setup` to start fresh |
+
+---
+
+## 🔌 REST API Reference
+
+All API endpoints are available under `/api/`. Protected endpoints require a `Bearer` token in the `Authorization` header.
+
+### 🧪 Interactive API Explorer
+
+Navigate to **`/admin/api`** in the web UI for a fully interactive API explorer where you can:
+- Generate a JWT token by logging in
+- Test every endpoint with a live form
+- See real responses with status codes and timing
+
+---
+
+### Authentication
+
+#### `POST /api/auth/login`
+Generate a JWT token.
+
+**Body:**
+```json
+{ "username": "root", "password": "admin" }
+```
+**Response:**
+```json
+{ "token": "<jwt>", "user": { "id": 1, "username": "root", "role": "admin", "quota": "10737418240" } }
+```
+
+---
+
+### User
+
+#### `GET /api/user/status` 🔒
+Get the current user's profile, quota, and this month's usage.
+
+---
+
+### Uploads
+
+#### `GET /api/config/folders` 🔒
+List upload folders available to the current user.
+
+#### `POST /api/upload` 🔒
+Upload a file. Request must be `multipart/form-data`.
+
+| Field | Type | Description |
+|---|---|---|
+| `file` | File | The file to upload |
+| `folder` | string | Folder name (must match a configured folder) |
+
+---
+
+### Admin — Users 🔒 👑
+
+#### `GET /api/admin/users`
+List all users with quotas and usage.
+
+#### `POST /api/admin/users`
+Create a new user.
+
+| Field | Type | Description |
+|---|---|---|
+| `username` | string | Required |
+| `password` | string | Required |
+| `role` | `user` \| `admin` | Required |
+| `quota` | number | Monthly quota in bytes (default: 10GB) |
+| `allowedFolders` | string[] | JSON array of folder names |
+
+#### `PUT /api/admin/users`
+Update a user's password, quota, or allowed folders. Pass `id` in the body.
+
+#### `DELETE /api/admin/users?id={id}`
+Delete a user by ID. Cannot delete `root`.
+
+---
+
+### Admin — History 🔒 👑
+
+#### `GET /api/admin/uploads?limit={n}`
+List upload history. Omit `limit` for all records.
+
+#### `GET /api/admin/logins?limit={n}`
+List login history. Omit `limit` for all records.
+
+---
+
+### Admin — Configuration 🔒 👑
+
+#### `GET /api/admin/system-config`
+Get system configuration (e.g., `retentionDays`).
+
+#### `POST /api/admin/system-config` *(Master only)*
+Update system configuration.
+
+```json
+{ "retentionDays": 30 }
+```
+
+#### `POST /api/admin/config`
+Save folder configuration.
+
+```json
+{ "uploadPaths": [{ "name": "Movies", "path": "/mnt/media/movies" }] }
+```
+
+---
+
+🔒 = Requires Bearer token | 👑 = Admin/Master role required
