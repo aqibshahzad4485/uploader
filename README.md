@@ -269,18 +269,21 @@ cd uploader
 # 1. Install dependencies (node_modules are NOT in git)
 npm install
 
-# 2. Create and edit your environment file
+# 2. Create your environment file  ← REQUIRED, not in git
 cp .env.example .env
-nano .env   # set JWT_SECRET and DATABASE_URL
+# Then edit it — at minimum set these two values:
+#   JWT_SECRET=<run: openssl rand -hex 32>
+#   DATABASE_URL=file:./dev.db
+nano .env
 
-# 3. Create and edit your folder config
+# 3. Create your folder config  ← REQUIRED, not in git
 cp uploader.json.example uploader.json
-nano uploader.json   # set your upload paths
+nano uploader.json   # set your upload destination paths
 
-# 4. Initialize database + create root user
+# 4. Initialize database + create root user  ← run ONCE on first deploy
 npm run setup
 
-# 5. Build the app
+# 5. Build the app  ← run after every git pull
 npm run build
 
 # 6. Start
@@ -292,10 +295,12 @@ npm start
 | Error | Cause | Fix |
 |---|---|---|
 | `sh: next: not found` | `node_modules` missing or no build | Run `npm install && npm run build` |
-| `Cannot find module '.prisma/client'` | Prisma not generated | Run `npm run setup` or `npx prisma generate` |
+| `Module '@prisma/client' has no exported member 'PrismaClient'` | Prisma client not generated | Run `npm run build` (now auto-generates) or `npx prisma generate` |
+| `datasource.url property is required` | `.env` file missing | `cp .env.example .env` then set `DATABASE_URL=file:./dev.db` |
+| `Cannot find module '.prisma/client'` | Prisma not generated | Run `npm run build` or `npx prisma generate` |
 | `Error: Cannot find module` | `node_modules` missing | Run `npm install` |
 | `ENOENT: .env` | Missing env file | `cp .env.example .env` and edit it |
-| `ENOENT: uploader.json` | Missing config | `cp uploader.json.example uploader.json` and edit it |
+| `ENOENT: uploader.json` | Missing folder config | `cp uploader.json.example uploader.json` and edit it |
 | `Prisma: Table does not exist` | DB not initialized | Run `npx prisma db push` |
 
 ### Updating an Existing Deploy

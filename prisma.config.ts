@@ -3,12 +3,16 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// Fall back to dev.db in the project root if DATABASE_URL is not set in .env.
+// This allows `npm run setup` to work on a fresh server without creating .env first.
+const dbUrl = process.env["DATABASE_URL"] ?? "file:./dev.db";
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: dbUrl,
   },
 });
