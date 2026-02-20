@@ -455,7 +455,42 @@ tail -f logs/uploader.log
 
 ---
 
-## 🐧 Running as a Linux Service (systemd)
+## 🐧 Running as a Linux Service
+
+### Option A — PM2 (Recommended for Node.js)
+
+PM2 is a process manager built for Node.js. It handles crashes, restarts, and log rotation better than a raw systemd unit.
+
+```bash
+# Install PM2 globally
+npm install -g pm2
+
+# Start the app
+cd /root/uploader
+pm2 start node_modules/.bin/next --name uploader -- start
+
+# Save the process list (survives reboots)
+pm2 save
+
+# Generate a systemd startup unit so PM2 itself starts on boot
+pm2 startup systemd -u root --hp /root
+# ↑ Copy-paste the command it prints and run it
+```
+
+**PM2 daily commands:**
+```bash
+pm2 status              # see all processes
+pm2 logs uploader       # live logs (Ctrl+C to exit)
+pm2 restart uploader    # restart
+pm2 stop uploader       # stop
+pm2 delete uploader     # remove from PM2
+```
+
+---
+
+### Option B — systemd (manual)
+
+> ⚠️ **Common mistake:** `ExecStart=/usr/bin/npm start` fails because systemd's stripped PATH can't find `next` inside `node_modules/.bin`. Use the **full path to the next binary** instead.
 
 Create `/etc/systemd/system/uploader.service`:
 
@@ -466,27 +501,33 @@ After=network.target
 
 [Service]
 Type=simple
-User=your_linux_username
-WorkingDirectory=/home/your_linux_username/data/projects/uploader
-ExecStart=/usr/bin/npm start
+User=root
+WorkingDirectory=/root/uploader
+ExecStart=/root/uploader/node_modules/.bin/next start
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
+Environment=NODE_ENV=production
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+> 💡 If your app is not in `/root/uploader`, adjust `WorkingDirectory` and `ExecStart` path accordingly.
+
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable uploader
-sudo systemctl start uploader
-sudo systemctl status uploader
+systemctl daemon-reload
+systemctl enable uploader
+systemctl start uploader
+systemctl status uploader
 
 # View logs
 journalctl -u uploader -f
 ```
+
+**Why `npm start` fails under systemd:** When systemd launches `npm start`, the `npm` binary is found but it then tries to resolve `next` from a minimal PATH. Since `node_modules/.bin` is not in systemd's default PATH, `next` is `not found` and the process exits immediately — causing the restart loop you see.
 
 ---
 
