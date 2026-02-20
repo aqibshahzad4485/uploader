@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
     LogOut, UploadCloud, File, FolderOpen, CheckCircle, XCircle,
     Settings, PieChart, Pause, Play, X as CancelIcon, Zap, RefreshCw,
-    AlertTriangle, ArrowRight, FolderInput, FilePlus, Trash2, Clock
+    AlertTriangle, ArrowRight, FolderInput, FilePlus, Trash2, Clock, RotateCcw
 } from "lucide-react";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -427,8 +427,45 @@ export default function Dashboard() {
         cancelledRef.current.add(id);
         setQueue(prev => prev.filter(f => f.id !== id));
     };
+    const retryFile = (id: string) => {
+        // Generate a fresh ID so the server gets a new uploadId/temp dir
+        const newId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        cancelledRef.current.delete(id);
+        pausedRef.current.delete(id);
+        let retried: QueuedFile | null = null;
+        setQueue(prev => {
+            const updated = prev.map(f => {
+                if (f.id !== id) return f;
+                retried = {
+                    ...f,
+                    id: newId,
+                    status: "queued",
+                    progress: 0,
+                    speed: "",
+                    eta: "",
+                    error: undefined,
+                };
+                return retried;
+            });
+            return updated;
+        });
+        // Re-run after state settles
+        setTimeout(() => { if (retried) processQueue([retried]); }, 50);
+    };
     const clearCompleted = () => {
         setQueue(prev => prev.filter(f => f.status !== "done" && f.status !== "cancelled" && f.status !== "error"));
+    };
+    const retryAll = () => {
+        const newItems: QueuedFile[] = [];
+        setQueue(prev => prev.map(f => {
+            if (f.status !== "error") return f;
+            const newId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            cancelledRef.current.delete(f.id);
+            const retried: QueuedFile = { ...f, id: newId, status: "queued", progress: 0, speed: "", eta: "", error: undefined };
+            newItems.push(retried);
+            return retried;
+        }));
+        setTimeout(() => { if (newItems.length > 0) processQueue(newItems); }, 50);
     };
 
     // ── Global controls ──────────────────────────────────────────────────────
@@ -458,6 +495,7 @@ export default function Dashboard() {
     const activeFiles = queue.filter(f => f.status === "uploading" || f.status === "paused");
     const queuedFiles = queue.filter(f => f.status === "queued");
     const doneFiles = queue.filter(f => f.status === "done");
+    const errorFiles = queue.filter(f => f.status === "error");
     const hasActive = activeFiles.length > 0 || queuedFiles.length > 0;
     const allPaused = activeFiles.length > 0 && activeFiles.every(f => f.status === "paused");
     const totalBytes = queue.reduce((a, f) => a + f.size, 0);
@@ -598,6 +636,11 @@ export default function Dashboard() {
                                     <CancelIcon className="h-3 w-3" /> Cancel All
                                 </button>
                             )}
+                            {errorFiles.length > 0 && (
+                                <button onClick={retryAll} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-purple-600/20 hover:bg-purple-600/30 border border-purple-600/30 text-purple-400 rounded-lg transition-colors">
+                                    <RotateCcw className="h-3 w-3" /> Retry Errors
+                                </button>
+                            )}
                             {doneFiles.length > 0 && (
                                 <button onClick={clearCompleted} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400 rounded-lg transition-colors">
                                     <Trash2 className="h-3 w-3" /> Clear Done
@@ -686,6 +729,11 @@ export default function Dashboard() {
                                             {item.status === "paused" && (
                                                 <button onClick={() => resumeFile(item.id)} className="p-1.5 text-gray-500 hover:text-blue-400 transition-colors rounded-lg hover:bg-blue-900/20" title="Resume">
                                                     <Play className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
+                                            {item.status === "error" && (
+                                                <button onClick={() => retryFile(item.id)} className="p-1.5 text-gray-500 hover:text-purple-400 transition-colors rounded-lg hover:bg-purple-900/20" title="Retry">
+                                                    <RotateCcw className="h-3.5 w-3.5" />
                                                 </button>
                                             )}
                                             {(item.status === "uploading" || item.status === "paused" || item.status === "queued") && (
