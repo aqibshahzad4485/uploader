@@ -325,6 +325,29 @@ Password: admin
 Role:     admin (master)
 ```
 
+> ⚠️ **Change the password immediately** after first login via the Admin Panel.
+
+### Forgot Your Password?
+
+Run this from the server directory — no server restart needed:
+
+```bash
+npm run reset-password root MyNewPassword123
+```
+
+Works for any user:
+```bash
+npm run reset-password <username> <new-password>
+```
+
+Example output:
+```
+✓ Password for 'root' has been reset.
+  Username: root
+  Password: MyNewPassword123
+  ⚠️  Change it again from the Admin Panel after logging in.
+```
+
 ---
 
 ## 👥 Roles & Access
@@ -571,9 +594,10 @@ Upload a file (or a chunk). `multipart/form-data`.
 |---|---|
 | `npm run dev` | Start development server with hot reload |
 | `npm start` | Start production server |
-| `npm run build` | Build for production |
+| `npm run build` | Build for production (auto-generates Prisma client) |
 | `npm run setup` | Full setup: generate Prisma client + push DB schema + seed root user |
 | `npm run seed` | Create default root user (if no users exist) |
+| `npm run reset-password <user> <pass>` | Reset any user's password from the command line |
 
 ---
 
