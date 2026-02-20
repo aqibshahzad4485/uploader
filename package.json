@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "npx tsx scripts/seed.ts",
+    "reset-password": "npx tsx scripts/reset-password.ts",
     "setup": "npx prisma generate && npx prisma db push && npx tsx scripts/seed.ts"
   },
   "dependencies": {
