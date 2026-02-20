@@ -143,27 +143,40 @@ export async function POST(req: Request) {
                 const finalPath = path.join(uploadDir, originalFilename as string);
 
                 try {
-                    const writeStream = fs.createWriteStream(finalPath);
-
-                    for (let i = 0; i < totalChunks; i++) {
-                        const cp = path.join(tempDir, `chunk_${i}`);
-                        if (!fs.existsSync(cp)) {
-                            throw new Error(`Missing chunk ${i} — upload incomplete or corrupted`);
-                        }
-                        const chunkData = await fs.promises.readFile(cp);
-                        await new Promise<void>((resolve, reject) => {
-                            writeStream.write(chunkData, (err) => err ? reject(err) : resolve());
-                        });
-                    }
-
                     await new Promise<void>((resolve, reject) => {
-                        writeStream.end((err?: Error | null) => err ? reject(err) : resolve());
+                        const writeStream = fs.createWriteStream(finalPath);
+
+                        // Wire stream-level errors so ERR_STREAM_DESTROYED can never be swallowed
+                        writeStream.on('error', (err) => {
+                            writeStream.destroy();
+                            reject(err);
+                        });
+                        writeStream.on('finish', resolve);
+
+                        (async () => {
+                            try {
+                                for (let i = 0; i < totalChunks; i++) {
+                                    const cp = path.join(tempDir, `chunk_${i}`);
+                                    if (!fs.existsSync(cp)) {
+                                        throw new Error(`Missing chunk ${i} of ${totalChunks} — upload incomplete`);
+                                    }
+                                    const chunkData = await fs.promises.readFile(cp);
+                                    // Backpressure-aware write
+                                    const drained = writeStream.write(chunkData);
+                                    if (!drained) {
+                                        await new Promise<void>((res) => writeStream.once('drain', res));
+                                    }
+                                }
+                                writeStream.end();
+                            } catch (err) {
+                                writeStream.destroy(err as Error);
+                            }
+                        })();
                     });
                 } catch (assembleErr) {
                     logger.error(`Failed to assemble chunks for '${originalFilename}'`, {
                         user: user.username, uploadId, error: String(assembleErr)
                     });
-                    // Clean up partial file
                     if (fs.existsSync(finalPath)) await fs.promises.unlink(finalPath).catch(() => { });
                     return NextResponse.json({ error: "Failed to assemble file. Upload may be incomplete." }, { status: 500 });
                 }

@@ -572,8 +572,8 @@ export default function Dashboard() {
                 {queue.length > 0 && (
                     <div className="space-y-3">
                         {/* Queue header */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-2 mr-auto">
                                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
                                     Upload Queue
                                 </h2>
@@ -583,28 +583,26 @@ export default function Dashboard() {
                                     {queuedFiles.length > 0 && ` · ${queuedFiles.length} waiting`}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {hasActive && !allPaused && (
-                                    <button onClick={pauseAll} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/30 text-amber-400 rounded-lg transition-colors">
-                                        <Pause className="h-3 w-3" /> Pause All
-                                    </button>
-                                )}
-                                {allPaused && (
-                                    <button onClick={resumeAll} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 text-blue-400 rounded-lg transition-colors">
-                                        <Play className="h-3 w-3" /> Resume All
-                                    </button>
-                                )}
-                                {hasActive && (
-                                    <button onClick={cancelAll} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 text-red-400 rounded-lg transition-colors">
-                                        <CancelIcon className="h-3 w-3" /> Cancel All
-                                    </button>
-                                )}
-                                {doneFiles.length > 0 && (
-                                    <button onClick={clearCompleted} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400 rounded-lg transition-colors">
-                                        <Trash2 className="h-3 w-3" /> Clear Done
-                                    </button>
-                                )}
-                            </div>
+                            {hasActive && !allPaused && (
+                                <button onClick={pauseAll} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/30 text-amber-400 rounded-lg transition-colors">
+                                    <Pause className="h-3 w-3" /> Pause All
+                                </button>
+                            )}
+                            {allPaused && (
+                                <button onClick={resumeAll} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 text-blue-400 rounded-lg transition-colors">
+                                    <Play className="h-3 w-3" /> Resume All
+                                </button>
+                            )}
+                            {hasActive && (
+                                <button onClick={cancelAll} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 text-red-400 rounded-lg transition-colors">
+                                    <CancelIcon className="h-3 w-3" /> Cancel All
+                                </button>
+                            )}
+                            {doneFiles.length > 0 && (
+                                <button onClick={clearCompleted} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400 rounded-lg transition-colors">
+                                    <Trash2 className="h-3 w-3" /> Clear Done
+                                </button>
+                            )}
                         </div>
 
                         {/* Overall progress bar (when multiple files) */}
@@ -647,17 +645,20 @@ export default function Dashboard() {
                                                             style={{ width: `${item.progress}%` }}
                                                         />
                                                     </div>
-                                                    <div className="flex justify-between text-xs text-gray-600 font-mono">
-                                                        <span>{item.progress.toFixed(1)}%</span>
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-600 font-mono">
+                                                        <span className="font-medium text-gray-500">{item.progress.toFixed(1)}%</span>
                                                         {item.status === "uploading" && (
-                                                            <span className="flex items-center gap-1.5">
+                                                            <>
+                                                                <span className="text-gray-700">·</span>
                                                                 <span>{item.speed}</span>
-                                                                <span>·</span>
+                                                                <span className="text-gray-700">·</span>
                                                                 <span>ETA {item.eta}</span>
-                                                                <span>·</span>
-                                                                <Zap className="h-2.5 w-2.5 text-yellow-600" />
-                                                                <span className="text-yellow-700">{item.streams}s</span>
-                                                            </span>
+                                                                <span className="text-gray-700">·</span>
+                                                                <span className="flex items-center gap-0.5 text-yellow-700">
+                                                                    <Zap className="h-2.5 w-2.5 text-yellow-600" />
+                                                                    {item.streams}s
+                                                                </span>
+                                                            </>
                                                         )}
                                                         {item.status === "paused" && <span className="text-amber-600">⏸ Paused</span>}
                                                     </div>
